@@ -89,9 +89,9 @@ def export_to_excel(rows):
 
 
 # --------------------------------- UI -------------------------------------
-st.set_page_config(page_title="Amazon Profit Calculator", page_icon="🧮", layout="wide")
+st.set_page_config(page_title="Amazon Profit Calculator", page_icon="📦", layout="wide")
 
-st.title("🧮 Amazon Profit Calculator")
+st.title("📦 Amazon Profit Calculator")
 st.caption("售价、头程、FBA、佣金、广告费、退货率都可手动输入；支持折扣场景与导出 Excel。")
 
 with st.expander("基础设置 / Basic Settings", expanded=True):
