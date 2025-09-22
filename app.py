@@ -12,34 +12,35 @@ import threading, time
 
 # ========== WeChat verify route (for Streamlit internal FastAPI) ==========
 VERIFY_FILE = "552bb7948e5cd9764c7b67dfc64d53c4.txt"
+def _try_mount():
+    from streamlit.web.server.server import Server
+    from starlette.responses import FileResponse, PlainTextResponse
 
-def _mount_wechat_verify():
-        from streamlit.web.server.server import Server
-        from starlette.responses import FileResponse, PlainTextResponse
-        server = Server.get_current()
-        if server is None or not hasattr(server, "_app"):
-            return False
+    server = Server.get_current()
+    if server is None or not hasattr(server, "_app"):
+        return False  # server not ready yet
 
-        app = server._app
-        vf = Path(VERIFY_FILE).resolve()
-	route_path = "/" + VERIFY_FILE
-    	for r in getattr(app.router, "routes", []):
-        	if getattr(r, "path", None) == route_path:
-            		return True
+    app = server._app
+    vf = Path(VERIFY_FILE).resolve()
 
-       	@app.get(route_path)
-    	def wechat_verify():
-        	if vf.exists():
-            		return FileResponse(str(vf), media_type="text/plain; charset=utf-8")
-        	return PlainTextResponse("verify file not found", status_code=404)
+    # 避免重复注册路由
+    route_path = "/" + VERIFY_FILE
+    for r in getattr(app.router, "routes", []):
+        if getattr(r, "path", None) == route_path:
+            return True
 
-    	print("[wechat-verify] mounted:", route_path)
-    	return True
+    @app.get(route_path)
+    def wechat_verify():
+        if vf.exists():
+            return FileResponse(str(vf), media_type="text/plain; charset=utf-8")
+        return PlainTextResponse("verify file not found", status_code=404)
+
+    print("[wechat-verify] mounted:", route_path)
+    return True
 
 def _mount_wechat_verify_async():
     def worker():
-        # 等待最多 ~10 秒（20 次 * 0.5s）
-        for _ in range(20):
+        for _ in range(20):  # 最多尝试 20 次
             try:
                 if _try_mount():
                     return
@@ -47,9 +48,11 @@ def _mount_wechat_verify_async():
                 print("[wechat-verify] error:", e)
             time.sleep(0.5)
         print("[wechat-verify] failed to mount within timeout")
+
     threading.Thread(target=worker, daemon=True).start()
 
 _mount_wechat_verify_async()
+   
 # ========================= End verify route ===============================
 
 
